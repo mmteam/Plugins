@@ -141,6 +141,7 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		PLAWESOMIUM_API void ExecuteJavascript(const PLCore::String &sJavascript) const;
 		PLAWESOMIUM_API void UpdateCall();
 		PLAWESOMIUM_API void SetAwesomiumWebCore(Awesomium::WebCore *pAwesomiumWebCore);
+		PLAWESOMIUM_API void SetAwesomiumWebSession(Awesomium::WebSession *pSession);
 		PLAWESOMIUM_API bool IsLoaded() const;
 
 	protected:
@@ -181,6 +182,7 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		
 		Awesomium::WebCore *m_pCurrentAwesomiumWebCore;
 		Awesomium::WebView *m_pWindow;
+		Awesomium::WebSession *m_pWebSession;
 		const PLCore::String m_sWindowName;
 		PLScene::SceneRenderer *m_pCurrentSceneRenderer;
 		PLRenderer::Renderer *m_pCurrentRenderer;

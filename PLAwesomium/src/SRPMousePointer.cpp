@@ -52,7 +52,7 @@ SRPMousePointer::~SRPMousePointer()
 
 void SRPMousePointer::DebugToConsole(const String &sString)
 {
-	System::GetInstance()->GetConsole().Print("PLBerkelium::SRPMousePointer - " + sString);
+	System::GetInstance()->GetConsole().Print("PLAwesomium::SRPMousePointer - " + sString);
 }
 
 

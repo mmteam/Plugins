@@ -80,8 +80,12 @@ void Gui::DebugToConsole(const String &sString)
 	System::GetInstance()->GetConsole().Print("PLAwesomium::Gui - " + sString);
 }
 
+Awesomium::WebCore *Gui::GetAwesomiumWebCore()
+{
+	return m_pAwesomiumWebCore;
+}
 
-bool Gui::AddWindow(const String &sName, const bool &pVisible, const String &sUrl, const int &nWidth, const int &nHeight, const int &nX, const int &nY, const bool &bTransparent, const bool &bEnabled)
+bool Gui::AddWindow(const String &sName, Awesomium::WebSession *pSession, const bool &pVisible, const String &sUrl, const int &nWidth, const int &nHeight, const int &nX, const int &nY, const bool &bTransparent, const bool &bEnabled)
 {
 	if (m_bAwesomiumInitialized)
 	{
@@ -113,7 +117,8 @@ bool Gui::AddWindow(const String &sName, const bool &pVisible, const String &sUr
 		pSRPWindows->GetData()->bLoaded = false;
 
 		pSRPWindows->SetAwesomiumWebCore(m_pAwesomiumWebCore); /*test*/
-
+		pSRPWindows->SetAwesomiumWebSession(pSession); /*test*/
+		
 		// we initialize the window
 		if (pSRPWindows->Initialize(m_pCurrentRenderer, Vector2(float(nX), float(nY)), Vector2(float(nWidth), float(nHeight))))
 		{

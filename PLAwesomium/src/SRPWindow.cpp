@@ -362,7 +362,7 @@ void SRPWindows::CreateAwesomiumWindow()
 	if (!m_pWindow)
 	{
 		// create awesomium window
-		m_pWindow = m_pCurrentAwesomiumWebCore->CreateWebView(m_psWindowsData->nFrameWidth, m_psWindowsData->nFrameHeight);
+		m_pWindow = m_pCurrentAwesomiumWebCore->CreateWebView(m_psWindowsData->nFrameWidth, m_psWindowsData->nFrameHeight, m_pWebSession, Awesomium::WebViewType::kWebViewType_Offscreen);
 
 		// setting listener for process callbacks
 		m_pWindow->set_process_listener(this);
@@ -657,6 +657,10 @@ void SRPWindows::SetAwesomiumWebCore(Awesomium::WebCore *pAwesomiumWebCore)
 	m_pCurrentAwesomiumWebCore = pAwesomiumWebCore;
 }
 
+void SRPWindows::SetAwesomiumWebSession(Awesomium::WebSession *pSession)
+{
+	m_pWebSession = pSession;
+}
 
 void SRPWindows::OnChangeTitle(Awesomium::WebView *caller, const Awesomium::WebString &title)
 {

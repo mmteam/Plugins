@@ -86,6 +86,7 @@ class Gui : public PLCore::Object {
 
 		PLAWESOMIUM_API bool IsAwesomiumInitialized() const;
 		PLAWESOMIUM_API bool AddWindow(const PLCore::String &sName,
+			Awesomium::WebSession* session,
 			const bool &pVisible = true,
 			const PLCore::String &sUrl = "about:blank",
 			const int &nWidth = 128,
@@ -96,6 +97,7 @@ class Gui : public PLCore::Object {
 			const bool &bEnabled = true);
 		PLAWESOMIUM_API SRPWindows *GetWindow(const PLCore::String &sName) const;
 		PLAWESOMIUM_API Awesomium::WebView *GetAwesomiumWindow(const PLCore::String &sName) const;
+		PLAWESOMIUM_API Awesomium::WebCore *GetAwesomiumWebCore();
 		PLAWESOMIUM_API PLCore::HashMap<PLCore::String, SRPWindows*> *GetWindowsMap() const;
 		PLAWESOMIUM_API void UpdateAwesomium();
 		PLAWESOMIUM_API void DestroyInstance() const;

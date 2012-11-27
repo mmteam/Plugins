@@ -3,3 +3,4 @@
 *.vcxproj.user
 Bin/Lib/x86/*.lib
 Bin/Runtime/x86/*.dll
+build/

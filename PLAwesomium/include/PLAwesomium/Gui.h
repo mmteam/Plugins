@@ -93,6 +93,7 @@ class Gui : public PLCore::Object {
 			const int &nHeight = 128,
 			const int &nX = 0,
 			const int &nY = 0,
+			const PLCore::String &sGlobalJSObjectName = "external",
 			const bool &bTransparent = true,
 			const bool &bEnabled = true);
 		PLAWESOMIUM_API SRPWindows *GetWindow(const PLCore::String &sName) const;

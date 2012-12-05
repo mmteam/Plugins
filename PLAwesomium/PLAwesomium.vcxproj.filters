@@ -23,6 +23,9 @@
     <ClCompile Include="src\SRPWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MethodDispatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\PLAwesomium\SRPMousePointer.h">
@@ -40,5 +43,7 @@
     <ClInclude Include="include\PLAwesomium\SRPWindow.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\PLAwesomium\JSDelegate.h" />
+    <ClInclude Include="include\PLAwesomium\MethodDispatcher.h" />
   </ItemGroup>
 </Project>

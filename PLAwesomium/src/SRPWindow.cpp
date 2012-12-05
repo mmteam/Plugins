@@ -26,9 +26,10 @@ pl_implement_class(SRPWindows)
 //[ Functions		                                      ]
 //[-------------------------------------------------------]
 SRPWindows::SRPWindows(const String &sName) :
-	m_pCurrentAwesomiumWebCore(nullptr), /*set by constructor?*/
+	m_pCurrentAwesomiumWebCore(Awesomium::WebCore::instance()), /*set by constructor?*/
 	m_pWindow(nullptr),
 	m_sWindowName(sName),
+	m_sGlobalJSObject("external"),
 	m_pCurrentSceneRenderer(nullptr),
 	m_pCurrentRenderer(nullptr),
 	m_pVertexBuffer(nullptr),
@@ -38,12 +39,12 @@ SRPWindows::SRPWindows(const String &sName) :
 	m_pTextureBuffer(nullptr),
 	m_cImage(),
 	m_psWindowsData(new sWindowsData),
+	m_pMethodDispatcher(new MethodDispatcher()),
 	m_bInitialized(false),
 	m_bReadyToDraw(false),
-	m_pDefaultCallBacks(new HashMap<String, sCallBack*>),
-	m_pCallBackFunctions(new HashMap<PLCore::String, PLCore::DynFuncPtr>),
 	m_bIgnoreBufferUpdate(false)
 {
+	m_psWindowsData->bLoaded = false;
 }
 
 
@@ -70,6 +71,13 @@ SRPWindows::~SRPWindows()
 	{
 		delete m_pTextureBuffer;
 	}
+
+	if(nullptr != m_pMethodDispatcher)
+	{
+		m_pMethodDispatcher->Clear();
+		delete m_pMethodDispatcher;
+	}
+	
 }
 
 
@@ -114,12 +122,6 @@ VertexBuffer *SRPWindows::CreateVertexBuffer(const Vector2 &vPosition, const Vec
 }
 
 
-void SRPWindows::SetRenderer(Renderer *pRenderer)
-{
-	m_pCurrentRenderer = pRenderer;
-}
-
-
 ProgramWrapper *SRPWindows::CreateProgramWrapper()
 {
 	// declare vertex and fragment shader
@@ -157,6 +159,12 @@ ProgramWrapper *SRPWindows::CreateProgramWrapper()
 		// return nothing because the program wrapper could not be created
 		return nullptr;
 	}
+}
+
+
+void SRPWindows::SetRenderer(Renderer *pRenderer)
+{
+	m_pCurrentRenderer = pRenderer;
 }
 
 
@@ -362,7 +370,7 @@ void SRPWindows::CreateAwesomiumWindow()
 	if (!m_pWindow)
 	{
 		// create awesomium window
-		m_pWindow = m_pCurrentAwesomiumWebCore->CreateWebView(m_psWindowsData->nFrameWidth, m_psWindowsData->nFrameHeight, m_pWebSession, Awesomium::WebViewType::kWebViewType_Offscreen);
+		m_pWindow = m_pCurrentAwesomiumWebCore->CreateWebView(m_psWindowsData->nFrameWidth, m_psWindowsData->nFrameHeight, m_pWebSession );
 
 		// setting listener for process callbacks
 		m_pWindow->set_process_listener(this);
@@ -370,8 +378,7 @@ void SRPWindows::CreateAwesomiumWindow()
 		// setting listener for load callbacks
 		m_pWindow->set_load_listener(this);
 
-		// setting handler for javascript callbacks
-		m_pWindow->set_js_method_handler(this);
+		m_pWindow->set_js_method_handler(m_pMethodDispatcher);
 	}
 }
 
@@ -512,19 +519,13 @@ void SRPWindows::MoveWindow(const int &nX, const int &nY)
 
 void SRPWindows::ClearCallBacks() const
 {
-	m_pDefaultCallBacks->Clear();
+	m_pMethodDispatcher->Clear();
 }
 
 
 uint32 SRPWindows::GetNumberOfCallBacks() const
 {
-	return m_pDefaultCallBacks->GetNumOfElements();
-}
-
-
-sCallBack *SRPWindows::GetCallBack(const String &sKey) const
-{
-	return m_pDefaultCallBacks->Get(sKey);
+	return m_pMethodDispatcher->CallbackCount();
 }
 
 
@@ -561,72 +562,31 @@ void SRPWindows::ResizeWindow(const int &nWidth, const int &nHeight)
 }
 
 
-bool SRPWindows::AddCallBackFunction(const DynFuncPtr pDynFunc, String sJSFunctionName, bool bHasReturn)
+void SRPWindows::AddCallBackFunction(JSDelegate cDelegate, String sJSFunctionName)
 {
-	if (pDynFunc)
-	{
-		// create function descriptor
-		const FuncDesc *pFuncDesc = pDynFunc->GetDesc();
-		if (pFuncDesc)
-		{
-			if (m_pCallBackFunctions->Get(pFuncDesc->GetName()) == NULL)
-			{
-				if (sJSFunctionName == "")
-				{
-					// the function name is not defined so we use the method name
-					sJSFunctionName = pFuncDesc->GetName();
-				}
-				// we bind the javascript function
-				//GetAwesomiumWindow()->addBindOnStartLoading(Berkelium::WideString::point_to(sJSFunctionName.GetUnicode()), Berkelium::Script::Variant::bindFunction(Berkelium::WideString::point_to(pFuncDesc->GetName().GetUnicode()), bHasReturn));
+	DebugToConsole("Binding " + sJSFunctionName + " to " + m_cGlobalJSObject.remote_id()+"\n");
+	
+	m_pMethodDispatcher->Bind(m_cGlobalJSObject, Awesomium::WebString::CreateFromUTF8(sJSFunctionName.GetUTF8(), sJSFunctionName.GetLength()), cDelegate);
 
-				// we add the function pointer to the hashmap
-				m_pCallBackFunctions->Add(pFuncDesc->GetName(), pDynFunc);
-				return true;
-			}
-			else
-			{
-				// the function specified already exists in list
-			}
-		}
-	}
-	return false;
 }
 
-
-bool SRPWindows::RemoveCallBack(const String &sKey) const
+void SRPWindows::AddCallBackFunctionWithRetval(JSDelegateWithRetval cDelegate, String sJSFunctionName)
 {
-	return m_pDefaultCallBacks->Remove(sKey);
+	m_pMethodDispatcher->BindWithRetval(m_cGlobalJSObject, Awesomium::WebString::CreateFromUTF8(sJSFunctionName.GetUTF8(), sJSFunctionName.GetLength()), cDelegate);
 }
 
+bool SRPWindows::HasCallBack(const PLCore::String &sKey) const
+{
+	return m_pMethodDispatcher->HasMethod(Awesomium::WebString::CreateFromUTF8(sKey.GetUTF8(), sKey.GetLength()));
+}
+
+void SRPWindows::RemoveCallBack(const String &sKey, bool bHasRetVal) const
+{
+	m_pMethodDispatcher->Unbind(Awesomium::WebString::CreateFromUTF8(sKey.GetUTF8(), sKey.GetLength()), bHasRetVal);
+}
 
 void SRPWindows::SetDefaultCallBackFunctions()
 {
-	// bind the default javascript functions for use
-	/*Awesomium::JSValue cJSDragWindow = GetAwesomiumWindow()->CreateGlobalJavascriptObject(Awesomium::WebString::CreateFromUTF8(String(DRAGWINDOW).GetUTF8(), String(DRAGWINDOW).GetLength()));
-	GetAwesomiumWindow()->CreateGlobalJavascriptObject(Awesomium::WebString::CreateFromUTF8(String(HIDEWINDOW).GetUTF8(), String(HIDEWINDOW).GetLength()));
-	GetAwesomiumWindow()->CreateGlobalJavascriptObject(Awesomium::WebString::CreateFromUTF8(String(CLOSEWINDOW).GetUTF8(), String(CLOSEWINDOW).GetLength()));
-
-	Awesomium::JSObject cJSObject = cJSDragWindow.ToObject();
-
-	cJSObject.SetCustomMethod(Awesomium::WebString::CreateFromUTF8(String(DRAGWINDOW).GetUTF8(), String(DRAGWINDOW).GetLength()), false);
-
-	DebugToConsole("last error: '" + String(GetAwesomiumWindow()->last_error()) + "'\n");*/
-
-
-
-	Awesomium::JSValue cJSTest = GetAwesomiumWindow()->CreateGlobalJavascriptObject(Awesomium::WebString::CreateFromUTF8("external", 5));
-
-	if (cJSTest.IsObject())
-	{
-		Awesomium::JSObject cJSObject = cJSTest.ToObject();
-
-		cJSObject.SetCustomMethod(Awesomium::WebString::CreateFromUTF8("hello", 5), false);
-
-		if (cJSObject.HasMethod(Awesomium::WebString::CreateFromUTF8("hello", 5)))
-		{
-			DebugToConsole("last error: '" + String(GetAwesomiumWindow()->last_error()) + "'\n");
-		}
-	}
 }
 
 
@@ -737,40 +697,38 @@ void SRPWindows::OnFailLoadingFrame(Awesomium::WebView *caller, PLCore::int64 fr
 
 void SRPWindows::OnFinishLoadingFrame(Awesomium::WebView *caller, PLCore::int64 frame_id, bool is_main_frame, const Awesomium::WebURL &url)
 {
-	m_psWindowsData->bLoaded = true;
 }
 
 
 void SRPWindows::OnDocumentReady(Awesomium::WebView *caller, const Awesomium::WebURL &url)
 {
 	DebugToConsole("OnDocumentReady()\n");
+
+	// We have to do this here, since the DOM has to be ready before adding custom objects / methods
+	Awesomium::JSValue val = m_pWindow->CreateGlobalJavascriptObject(Awesomium::WebString::CreateFromUTF8(m_sGlobalJSObject.GetUTF8(), m_sGlobalJSObject.GetLength()));
+
+	if(m_pWindow->last_error() != Awesomium::kError_None)
+	{
+		DebugToConsole(m_pWindow->last_error());
+		return;
+	}
+
+	m_cGlobalJSObject = val.ToObject();
+
+	m_psWindowsData->bLoaded = true;
 }
 
 
 bool SRPWindows::IsLoaded() const
 {
-	return m_psWindowsData->bLoaded;
+	return m_psWindowsData->bLoaded && !m_pWindow->IsLoading();
 }
 
 
-void SRPWindows::OnMethodCall(Awesomium::WebView *caller, unsigned int remote_object_id, const Awesomium::WebString &method_name, const Awesomium::JSArray &args)
+void SRPWindows::SetGlobalJSObject(const String &sGlobalJSObject)
 {
-	/*javascript callback handled, implement working example from PLBerkelium*/
-
-	DebugToConsole("Javascript callback triggered!\n");
-	DebugToConsole("name: " + String(const_cast<wchar16*>(method_name.data())) + "\n");
+	m_sGlobalJSObject = sGlobalJSObject;
 }
-
-
-Awesomium::JSValue SRPWindows::OnMethodCallWithReturnValue(Awesomium::WebView *caller, unsigned int remote_object_id, const Awesomium::WebString &method_name, const Awesomium::JSArray &args)
-{
-	/*javascript callback handled with return value, implement working example from PLBerkelium*/
-
-	DebugToConsole("Javascript callback with return triggered!\n");
-
-	return Awesomium::JSValue(0);
-}
-
 
 //[-------------------------------------------------------]
 //[ Namespace                                             ]

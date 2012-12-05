@@ -32,12 +32,15 @@
 #include "Awesomium/WebCore.h"
 #include "Awesomium/WebConfig.h"
 #include "Awesomium/WebView.h"
+#include "Awesomium/JSValue.h"
+#include "Awesomium/JSArray.h"
 #include "Awesomium/STLHelpers.h"
 #include "Awesomium/BitmapSurface.h"
 #include "Awesomium/WebViewListener.h"
 
 #include "PLAwesomium.h"
-
+#include <PLAwesomium/JSDelegate.h>
+#include <PLAwesomium/MethodDispatcher.h>
 
 //[-------------------------------------------------------]
 //[ Forward declarations                                  ]
@@ -94,14 +97,14 @@ struct sCallBack
 };
 
 
+
 //[-------------------------------------------------------]
 //[ Classes                                               ]
 //[-------------------------------------------------------]
 class SRPWindows : public PLScene::SceneRendererPass,
 	public Awesomium::WebViewListener::View,
 	public Awesomium::WebViewListener::Process,
-	public Awesomium::WebViewListener::Load,
-	public Awesomium::JSMethodHandler {
+	public Awesomium::WebViewListener::Load {
 
 
 	//[-------------------------------------------------------]
@@ -110,7 +113,6 @@ class SRPWindows : public PLScene::SceneRendererPass,
 	pl_class(PLAWESOMIUM_RTTI_EXPORT, SRPWindows, "PLAwesomium", PLScene::SceneRendererPass, "")
 		pl_constructor_1(ParameterConstructor, const PLCore::String&, "", "")
 	pl_class_end
-
 
 	public:
 		PLAWESOMIUM_API SRPWindows(const PLCore::String &sName);
@@ -134,15 +136,17 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		PLAWESOMIUM_API void MoveWindow(const int &nX, const int &nY);
 		PLAWESOMIUM_API void ClearCallBacks() const;
 		PLAWESOMIUM_API PLCore::uint32 GetNumberOfCallBacks() const;
-		PLAWESOMIUM_API sCallBack *GetCallBack(const PLCore::String &sKey) const;
-		PLAWESOMIUM_API bool RemoveCallBack(const PLCore::String &sKey) const; /*unused*/
+		PLAWESOMIUM_API bool HasCallBack(const PLCore::String &sKey) const;
+		PLAWESOMIUM_API void RemoveCallBack(const PLCore::String &sKey, bool bHasRetVal) const; 
 		PLAWESOMIUM_API void ResizeWindow(const int &nWidth, const int &nHeight); /*unused*/
-		PLAWESOMIUM_API bool AddCallBackFunction(const PLCore::DynFuncPtr pDynFunc, PLCore::String sJSFunctionName = "",  bool bHasReturn = false); /*unused*/
+		PLAWESOMIUM_API void AddCallBackFunction(JSDelegate cDelegate, PLCore::String sJSFunctionName = "");
+		PLAWESOMIUM_API void AddCallBackFunctionWithRetval(JSDelegateWithRetval cDelegate, PLCore::String sJSFunctionName = "");
 		PLAWESOMIUM_API void ExecuteJavascript(const PLCore::String &sJavascript) const;
 		PLAWESOMIUM_API void UpdateCall();
 		PLAWESOMIUM_API void SetAwesomiumWebCore(Awesomium::WebCore *pAwesomiumWebCore);
 		PLAWESOMIUM_API void SetAwesomiumWebSession(Awesomium::WebSession *pSession);
 		PLAWESOMIUM_API bool IsLoaded() const;
+		PLAWESOMIUM_API void SetGlobalJSObject(const PLCore::String &sGlobalJSObject);
 
 	protected:
 
@@ -168,9 +172,6 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		virtual void OnFinishLoadingFrame(Awesomium::WebView *caller, PLCore::int64 frame_id, bool is_main_frame, const Awesomium::WebURL &url);
 		virtual void OnDocumentReady(Awesomium::WebView *caller, const Awesomium::WebURL &url);
 
-		virtual void OnMethodCall(Awesomium::WebView *caller, unsigned int remote_object_id, const Awesomium::WebString &method_name, const Awesomium::JSArray &args);
-		virtual Awesomium::JSValue OnMethodCallWithReturnValue(Awesomium::WebView *caller, unsigned int remote_object_id, const Awesomium::WebString &method_name, const Awesomium::JSArray &args);
-
 		PLRenderer::VertexBuffer *CreateVertexBuffer(const PLMath::Vector2 &vPosition, const PLMath::Vector2 &vImageSize);
 		PLRenderer::ProgramWrapper *CreateProgramWrapper();
 		bool UpdateVertexBuffer(PLRenderer::VertexBuffer *pVertexBuffer, const PLMath::Vector2 &vPosition, const PLMath::Vector2 &vImageSize);
@@ -180,10 +181,13 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		void SetWindowSettings();
 		void SetDefaultCallBackFunctions();
 		
+
 		Awesomium::WebCore *m_pCurrentAwesomiumWebCore;
 		Awesomium::WebView *m_pWindow;
 		Awesomium::WebSession *m_pWebSession;
+		Awesomium::JSObject m_cGlobalJSObject;
 		const PLCore::String m_sWindowName;
+		PLCore::String m_sGlobalJSObject;
 		PLScene::SceneRenderer *m_pCurrentSceneRenderer;
 		PLRenderer::Renderer *m_pCurrentRenderer;
 		PLRenderer::VertexBuffer *m_pVertexBuffer;
@@ -196,11 +200,8 @@ class SRPWindows : public PLScene::SceneRendererPass,
 		bool m_bInitialized;
 		bool m_bReadyToDraw;
 		PLCore::String m_sLastKnownUrl; /*we might need this*/
-		PLCore::HashMap<PLCore::String, sCallBack*> *m_pDefaultCallBacks;
-		PLCore::HashMap<PLCore::String, PLCore::DynFuncPtr> *m_pCallBackFunctions;
+		MethodDispatcher* m_pMethodDispatcher;
 		bool m_bIgnoreBufferUpdate;
-
-
 };
 
 

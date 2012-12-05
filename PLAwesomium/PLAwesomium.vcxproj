@@ -105,7 +105,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>PLCoreD.lib;PLMathD.lib;PLInputD.lib;PLGraphicsD.lib;PLRendererD.lib;PLMeshD.lib;PLSceneD.lib;PLEngineD.lib;awesomium.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>PLCore.lib;PLMath.lib;PLInput.lib;PLGraphics.lib;PLRenderer.lib;PLMesh.lib;PLScene.lib;PLEngine.lib;awesomium.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(PL_ROOT)/Bin/Lib/x86/;$(AWESOMIUM_ROOT)/build/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -293,6 +293,7 @@ $(PL_ROOT)\Bin\Tools\x64\PLProject.exe . --output-path ..\Bin\Runtime\x64 --writ
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Gui.cpp" />
+    <ClCompile Include="src\MethodDispatcher.cpp" />
     <ClCompile Include="src\PLAwesomium.cpp" />
     <ClCompile Include="src\SRPMousePointer.cpp" />
     <ClCompile Include="src\SRPWindow.cpp" />
@@ -300,6 +301,8 @@ $(PL_ROOT)\Bin\Tools\x64\PLProject.exe . --output-path ..\Bin\Runtime\x64 --writ
   <ItemGroup>
     <ClInclude Include="include\PLAwesomium\ARGBtoRGBA_GLSL.h" />
     <ClInclude Include="include\PLAwesomium\Gui.h" />
+    <ClInclude Include="include\PLAwesomium\JSDelegate.h" />
+    <ClInclude Include="include\PLAwesomium\MethodDispatcher.h" />
     <ClInclude Include="include\PLAwesomium\PLAwesomium.h" />
     <ClInclude Include="include\PLAwesomium\SRPMousePointer.h" />
     <ClInclude Include="include\PLAwesomium\SRPWindow.h" />

@@ -85,7 +85,7 @@ Awesomium::WebCore *Gui::GetAwesomiumWebCore()
 	return m_pAwesomiumWebCore;
 }
 
-bool Gui::AddWindow(const String &sName, Awesomium::WebSession *pSession, const bool &pVisible, const String &sUrl, const int &nWidth, const int &nHeight, const int &nX, const int &nY, const bool &bTransparent, const bool &bEnabled)
+bool Gui::AddWindow(const String &sName, Awesomium::WebSession *pSession, const bool &pVisible, const String &sUrl, const int &nWidth, const int &nHeight, const int &nX, const int &nY, const String &sGlobalJSObjectName, const bool &bTransparent, const bool &bEnabled)
 {
 	if (m_bAwesomiumInitialized)
 	{
@@ -99,7 +99,7 @@ bool Gui::AddWindow(const String &sName, Awesomium::WebSession *pSession, const 
 			// window name already exists, this is to prevent duplication and overrides in the hashmap
 			return false;
 		}
-
+		
 		// we create the window
 		SRPWindows *pSRPWindows = new SRPWindows(sName);
 
@@ -115,6 +115,8 @@ bool Gui::AddWindow(const String &sName, Awesomium::WebSession *pSession, const 
 		pSRPWindows->GetData()->bMouseEnabled = bEnabled; // implement further
 		pSRPWindows->GetData()->bNeedsFullUpdate = true;
 		pSRPWindows->GetData()->bLoaded = false;
+
+		pSRPWindows->SetGlobalJSObject(sGlobalJSObjectName);
 
 		pSRPWindows->SetAwesomiumWebCore(m_pAwesomiumWebCore); /*test*/
 		pSRPWindows->SetAwesomiumWebSession(pSession); /*test*/
@@ -283,8 +285,11 @@ void Gui::AddDummyWindow()
 	pSRPWindows->GetData()->bKeyboardEnabled = false;
 	pSRPWindows->GetData()->bMouseEnabled = false;
 
+	pSRPWindows->SetGlobalJSObject("external");
+
 	// we need to set the web core before we can create windows
 	pSRPWindows->SetAwesomiumWebCore(m_pAwesomiumWebCore);
+	pSRPWindows->SetAwesomiumWebSession(nullptr);
 
 	// we create a awesomium window
 	pSRPWindows->CreateAwesomiumWindow();
@@ -515,7 +520,10 @@ void Gui::OnUpdate()
 	UpdateAwesomium();
 	// mouse handler?
 	KeyboardHandler();
-	DefaultCallBackHandler();
+	
+	//Not of any real use right now
+	//DefaultCallBackHandler();
+	
 	DragWindowHandler();
 	// resize window handler
 
@@ -784,23 +792,20 @@ void Gui::DefaultCallBackHandler()
 		// check if callback is present
 		if (pSRPWindows->GetNumberOfCallBacks() > 0)
 		{
-			if (pSRPWindows->GetCallBack(DRAGWINDOW))
+			if (pSRPWindows->HasCallBack(DRAGWINDOW))
 			{
 				m_pDragWindow = pSRPWindows;
 			}
 
-			if (pSRPWindows->GetCallBack(HIDEWINDOW))
+			if (pSRPWindows->HasCallBack(HIDEWINDOW))
 			{
 				/*hide window*/
 			}
 
-			if (pSRPWindows->GetCallBack(CLOSEWINDOW))
+			if (pSRPWindows->HasCallBack(CLOSEWINDOW))
 			{
 				/*close window*/
 			}
-
-			// call back is processed so we clear them
-			pSRPWindows->ClearCallBacks();
 		}
 	}
 }
